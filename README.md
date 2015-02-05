@@ -1,5 +1,5 @@
 # VisualReview API for Protractor
-Provides an API to send screenshots to VisualReview from your [Protractor](https://github.com/angular/protractor) tests.
+Provides an API to send screenshots to [VisualReview](https://github.com/xebia/VisualReview) from your [Protractor](https://github.com/angular/protractor) tests.
 
 ## Requirements
 Requires Protractor 1.4.0 or higher.
