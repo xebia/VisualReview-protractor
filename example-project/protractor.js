@@ -1,7 +1,7 @@
 const VisualReview = require('visualreview-protractor');
 var vr = new VisualReview({
   hostname: 'localhost',
-  port: 1337
+  port: 7000
 });
 
 exports.config = {
