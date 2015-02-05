@@ -32,7 +32,8 @@
   ],
   "files": [
     "LICENSE",
-    "README.md"
+    "README.md",
+    "visualreview-protractor.js"
   ],
   "main": "visualreview-protractor.js",
   "scripts": {
