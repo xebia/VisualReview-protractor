@@ -27,7 +27,8 @@ exports.config = {
       return these promise objects.
   */
   beforeLaunch: function () {
-      // creates a new run under project name 'myProject', suite 'mySuite'
+      // Creates a new run under project name 'myProject', suite 'mySuite'.
+      // Make sure that there's a project with this name before running the test.
       return vr.initRun('myProject', 'mySuite');
   }
 
