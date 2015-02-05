@@ -1,0 +1,12 @@
+{
+  "name": "visualreview-protractor-example",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "private": true,
+  "license": "Apache License 2.0",
+  "dependencies": {
+    "protractor": "^1.6.1"
+  }
+}

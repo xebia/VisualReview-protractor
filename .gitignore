@@ -1,0 +1,16 @@
+node_modules
+bower_components
+generated
+.idea
+*.iml
+*.log
+gradlew*
+gradle/
+target/
+out/
+dependency-reduced-pom.xml
+.tmp
+dist/
+.env
+.DS_Store
+

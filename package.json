@@ -1,0 +1,47 @@
+{
+  "name": "visualreview-protractor",
+  "version": "0.0.1",
+  "description": "Provides an API to send screenshots to VisualReview from Protractor tests.",
+  "homepage": "https://github.com/xebia/VisualReview-protractor",
+  "author": {
+    "name": "Xebia",
+    "url": "http://xebia.com/"
+  },
+  "maintainers": [
+    {
+      "name": "Daniel Marjenburgh",
+      "email": "dmarjenburgh@xebia.com"
+    },
+    {
+      "name": "Sannie Kwakman",
+      "email": "skwakman@xebia.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xebia/VisualReview-protractor"
+  },
+  "bugs": {
+    "url": "https://github.com/xebia/VisualReview-protractor/issues"
+  },
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "https://github.com/xebia/VisualReview-protractor/LICENSE"
+    }
+  ],
+  "files": [
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "visualreview-protractor.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Xebia",
+  "license": "Apache License 2.0",
+  "dependencies": {
+    "q": "^1.1.2",
+    "request": "^2.51.0"
+  }
+}
