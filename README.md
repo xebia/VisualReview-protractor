@@ -1,6 +1,9 @@
 # VisualReview API for Protractor
 Provides an API to send screenshots to VisualReview from your [Protractor](https://github.com/angular/protractor) tests.
 
+## Requirements
+Requires Protractor 1.4.0 or higher.
+
 ## Getting started
 First add visualreview-protractor to your protractor project's dependencies.
 
