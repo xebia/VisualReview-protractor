@@ -50,7 +50,7 @@ function VisualReview(options) {
     request(requestOptions, function (error, response, body) {
       if (error) {
         defer.reject(error);
-      } else if (parseInt(response.statusCode) >= 400 || parseInt(response.statusCode < 600)) {
+      } else if (parseInt(response.statusCode) >= 400 && parseInt(response.statusCode) < 600) {
         defer.reject('The VisualReview server returned status ' + response.statusCode + ": " + body);
       } else {
         try {
