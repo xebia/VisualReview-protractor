@@ -26,7 +26,7 @@ module.exports = VisualReview;
 
 function VisualReview(options) {
   var hostname = options.hostname || 'localhost';
-  var port = options.port || 1337;
+  var port = options.port || 7000;
 
   this._callServer = function (method, path, jsonBody, multiPartFormOptions) {
     var defer = q.defer();
