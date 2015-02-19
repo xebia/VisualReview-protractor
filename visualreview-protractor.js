@@ -1,18 +1,18 @@
 /*
-  Copyright 2015 Xebia
+ Copyright 2015 Xebia
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-  http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
 
 const fs = require('fs');
 const path = require('path');
@@ -28,7 +28,7 @@ function VisualReview(options) {
   var hostname = options.hostname || 'localhost';
   var port = options.port || 1337;
 
-  this._callServer = function (method, path, formParams, multiPartFormOptions) {
+  this._callServer = function (method, path, jsonBody, multiPartFormOptions) {
     var defer = q.defer();
 
     var requestOptions = {
@@ -36,9 +36,10 @@ function VisualReview(options) {
       uri: 'http://' + hostname + ':' + port + '/api/' + path
     };
 
-    // for regular form parameters
-    if (formParams) {
-      requestOptions.form = formParams;
+    // for JSON body request
+    if (jsonBody) {
+      requestOptions.body = jsonBody;
+      requestOptions.json = true;
     }
 
     // for multipart forms
@@ -50,10 +51,10 @@ function VisualReview(options) {
       if (error) {
         defer.reject(error);
       } else if (parseInt(response.statusCode) >= 400 || parseInt(response.statusCode < 600)) {
-        defer.reject('Server returned status ' + response.statusCode + ": " + body);
+        defer.reject('The VisualReview server returned status ' + response.statusCode + ": " + body);
       } else {
         try {
-          defer.resolve(JSON.parse(body));
+          defer.resolve(body);
         } catch (e) {
           defer.reject("Could not parse JSON response from server " + e);
         }
@@ -65,9 +66,9 @@ function VisualReview(options) {
 
   this._writeRunIdFile = function (runId) {
     var defer = q.defer();
-    fs.writeFile(RUN_ID_FILE, runId, function(err) {
-      if(err) {
-        defer.reject("VisualReview-protractor: could not write temporary runid file. " + err)
+    fs.writeFile(RUN_ID_FILE, runId, function (err) {
+      if (err) {
+        defer.reject("VisualReview-protractor: could not write temporary runId file. " + err)
       } else {
         defer.resolve(runId);
       }
@@ -81,19 +82,19 @@ function VisualReview(options) {
 
     fs.readFile(RUN_ID_FILE, function (err, data) {
       if (err) {
-        defer.reject("VisualReview-protractor: could not read temporary runid file + " + err);
+        defer.reject("VisualReview-protractor: could not read temporary runId file + " + err);
       } else {
         defer.resolve(data);
       }
     });
 
     return defer.promise;
-  }
+  };
 
   this.initRun = function (projectName, suiteName) {
     return this._callServer('post', 'runs', {
-      'project-name': projectName,
-      'suite-name': suiteName
+      'projectName': projectName,
+      'suiteName': suiteName
     }).then(
       function (result) {
         var createdRunId = result.id;
@@ -137,11 +138,8 @@ function VisualReview(options) {
         }
 
         return this._callServer('post', 'runs/' + runId + '/screenshots', null, {
-          'meta[os]': metaData.os,
-          'meta[browser]': metaData.browser,
-          'meta[version]': metaData.version,
-          'meta[resolution]': metaData.resolution,
-          'screenshot-name': name,
+          meta: JSON.stringify(metaData),
+          screenshotName: name,
           file: {
             value: new Buffer(png, 'base64'),
             options: {
