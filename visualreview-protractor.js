@@ -25,8 +25,22 @@ const RUN_ID_FILE = '.visualreview-runid.pid';
 module.exports = VisualReview;
 
 function VisualReview(options) {
+  function defaultMetaDataFn(capabilities) {
+    return {};
+  }
+
+  function defaultPropertiesFn(capabilities) {
+    return {
+      'os': capabilities.caps_.platform,
+      'browser': capabilities.caps_.browserName,
+      'version': capabilities.caps_.version
+    }
+  }
+
   var hostname = options.hostname || 'localhost';
   var port = options.port || 7000;
+  var metaDataFn = options.metaDataFn || defaultMetaDataFn;
+  var propertiesFn = options.propertiesFn || defaultPropertiesFn;
 
   this._callServer = function (method, path, jsonBody, multiPartFormOptions) {
     var defer = q.defer();
@@ -110,28 +124,29 @@ function VisualReview(options) {
       });
   };
 
-  this._getMetaData = function (browser) {
-    return browser.getCapabilities().then(function (caps) {
-      return {
-        'os': caps.caps_.platform,
-        'browser': caps.caps_.browserName,
-        'version': caps.caps_.version
-      }
-    }).then(function (metadata) {
-      return browser.manage().window().getSize().then(function (size) {
-        metadata.resolution = size.width + 'x' + size.height;
-        return metadata;
+  this._getProperties = function (browser) {
+    return browser.getCapabilities()
+      .then(propertiesFn)
+      .then(function (properties) {
+        return browser.manage().window().getSize().then(function (size) {
+          properties.resolution = size.width + 'x' + size.height;
+          return properties;
+        });
       });
-    });
+  };
+
+  this._getMetaData = function (browser) {
+    return browser.getCapabilities().then(metaDataFn);
   };
 
   this.takeScreenshot = function (name) {
     return browser.driver.controlFlow().execute(function () {
 
-      return q.all([this._getMetaData(browser), browser.takeScreenshot(), this._readRunIdFile()]).then(function (results) {
-        var metaData = results[0],
-          png = results[1],
-          runId = results[2];
+      return q.all([this._getProperties(browser), this._getMetaData(browser), browser.takeScreenshot(), this._readRunIdFile()]).then(function (results) {
+        var properties = results[0],
+          metaData = results[1],
+          png = results[2],
+          runId = results[3];
 
         if (!runId) {
           throw Error('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
@@ -139,6 +154,7 @@ function VisualReview(options) {
 
         return this._callServer('post', 'runs/' + runId + '/screenshots', null, {
           meta: JSON.stringify(metaData),
+          properties: JSON.stringify(properties),
           screenshotName: name,
           file: {
             value: new Buffer(png, 'base64'),
