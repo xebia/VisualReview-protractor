@@ -118,7 +118,7 @@ exports.config = {
   // You can specify a file containing code to run by setting beforeLaunch to
   // the filename string.
   beforeLaunch: function() {
-    return vr.initRun('dev6', 'mySuite3');
+    return vr.initRun('dev2', 'mySuite3');
     // At this point, global variable 'protractor' object will NOT be set up,
     // and globals from the test framework will NOT be available. The main
     // purpose of this function should be to bring up test dependencies.
