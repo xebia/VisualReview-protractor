@@ -1,6 +1,6 @@
 # VisualReview-protractor example project.
 
-For local developement, after linking visualreview's protractor project, execute:
+For local development, after linking visualreview's protractor project, execute:
 ```shell
 npm link visualreview-protractor
 ```
