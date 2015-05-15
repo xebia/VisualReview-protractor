@@ -20,12 +20,12 @@ const util = require('util');
 const q = require('q');
 const request = require('request');
 
-const RUN_ID_FILE = '.visualreview-runid.pid';
+const RUN_PID_FILE = '.visualreview-runid.pid';
 
 module.exports = VisualReview;
 
 function VisualReview(options) {
-  function defaultMetaDataFn(capabilities) {
+  function defaultMetaDataFn() {
     return {};
   }
 
@@ -78,13 +78,13 @@ function VisualReview(options) {
     return defer.promise;
   };
 
-  this._writeRunIdFile = function (runId) {
+  this._writeRunIdFile = function (run) {
     var defer = q.defer();
-    fs.writeFile(RUN_ID_FILE, runId, function (err) {
+    fs.writeFile(RUN_PID_FILE, run, function (err) {
       if (err) {
         defer.reject("VisualReview-protractor: could not write temporary runId file. " + err)
       } else {
-        defer.resolve(runId);
+        defer.resolve(run);
       }
     });
 
@@ -94,11 +94,11 @@ function VisualReview(options) {
   this._readRunIdFile = function () {
     var defer = q.defer();
 
-    fs.readFile(RUN_ID_FILE, function (err, data) {
+    fs.readFile(RUN_PID_FILE, function (err, data) {
       if (err) {
-        defer.reject("VisualReview-protractor: could not read temporary runId file + " + err);
+        defer.reject("VisualReview-protractor: could not read temporary run pid file + " + err);
       } else {
-        defer.resolve(data);
+        defer.resolve(JSON.parse(data));
       }
     });
 
@@ -111,10 +111,15 @@ function VisualReview(options) {
       'suiteName': suiteName
     }).then(
       function (result) {
-        var createdRunId = result.id;
-        if (createdRunId) {
-          console.log("VisualReview-protractor: created run with ID", createdRunId);
-          return this._writeRunIdFile(createdRunId);
+        var createdRun = {
+          run_id: result.id,
+          project_id: result.projectId,
+          suite_id: result.suiteId
+        };
+
+        if (createdRun) {
+          console.log("VisualReview-protractor: created run with ID", createdRun.run_id);
+          return this._writeRunIdFile(JSON.stringify(createdRun));
         } else {
           throw new Error('VisualReview-protractor: VisualReview server returned an empty run id when creating a new run. Probably something went wrong with the server.');
         }
@@ -144,15 +149,15 @@ function VisualReview(options) {
 
       return q.all([this._getProperties(browser), this._getMetaData(browser), browser.takeScreenshot(), this._readRunIdFile()]).then(function (results) {
         var properties = results[0],
-          metaData = results[1],
-          png = results[2],
-          runId = results[3];
+            metaData = results[1],
+            png = results[2],
+            run = results[3];
 
-        if (!runId) {
+        if (!run) {
           throw Error('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
         }
 
-        return this._callServer('post', 'runs/' + runId + '/screenshots', null, {
+        return this._callServer('post', 'runs/' + run.run_id + '/screenshots', null, {
           meta: JSON.stringify(metaData),
           properties: JSON.stringify(properties),
           screenshotName: name,
@@ -177,12 +182,16 @@ function VisualReview(options) {
   this.cleanup = function () {
     var defer = q.defer();
 
-    fs.unlink(RUN_ID_FILE, function (err) {
-      if (err) {
-        defer.reject(err);
-      } else {
-        defer.resolve();
-      }
+    return this._readRunIdFile().then(function (run) {
+      console.log('VisualReview-protractor: test finished. Your results can be viewed at: ' +
+      'http://' + hostname + ':' + port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
+      fs.unlink(RUN_PID_FILE, function (err) {
+        if (err) {
+          defer.reject(err);
+        } else {
+          defer.resolve();
+        }
+      });
     });
 
     return defer.promise;
