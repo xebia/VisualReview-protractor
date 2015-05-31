@@ -21,6 +21,7 @@ const q = require('q');
 const request = require('request');
 
 const RUN_PID_FILE = '.visualreview-runid.pid';
+const API_VERSION = "1";
 
 module.exports = VisualReview;
 
@@ -65,12 +66,12 @@ function VisualReview(options) {
       if (error) {
         defer.reject(error);
       } else if (parseInt(response.statusCode) >= 400 && parseInt(response.statusCode) < 600) {
-        defer.reject('The VisualReview server returned status ' + response.statusCode + ": " + body);
+        defer.reject('VisualReview server returned status ' + response.statusCode + ": " + body);
       } else {
         try {
           defer.resolve(body);
         } catch (e) {
-          defer.reject("Could not parse JSON response from server " + e);
+          defer.reject("could not parse JSON response from server " + e);
         }
       }
     });
@@ -82,7 +83,7 @@ function VisualReview(options) {
     var defer = q.defer();
     fs.writeFile(RUN_PID_FILE, run, function (err) {
       if (err) {
-        defer.reject("VisualReview-protractor: could not write temporary runId file. " + err)
+        defer.reject("could not write temporary runId file. " + err)
       } else {
         defer.resolve(run);
       }
@@ -96,7 +97,7 @@ function VisualReview(options) {
 
     fs.readFile(RUN_PID_FILE, function (err, data) {
       if (err) {
-        defer.reject("VisualReview-protractor: could not read temporary run pid file + " + err);
+        defer.reject("could not read temporary run pid file + " + err);
       } else {
         defer.resolve(JSON.parse(data));
       }
@@ -105,7 +106,16 @@ function VisualReview(options) {
     return defer.promise;
   };
 
-  this.initRun = function (projectName, suiteName) {
+  this._checkServerApiVersion = function () {
+    return this._callServer('get', 'version').then(function (result) {
+      if (result !== API_VERSION) {
+        throw new Error('server\'s API version (' + result + ') is not compatible with this version of VisualReview-protractor. ' +
+          'Please visit VisualReview-protractor\'s website for more information.');
+      }
+    });
+  };
+
+  this._createRun = function (projectName, suiteName) {
     return this._callServer('post', 'runs', {
       'projectName': projectName,
       'suiteName': suiteName
@@ -118,14 +128,22 @@ function VisualReview(options) {
         };
 
         if (result.id) {
-          console.log("VisualReview-protractor: created run with ID", createdRun.run_id);
+          console.log("created run with ID", createdRun.run_id);
           return this._writeRunIdFile(JSON.stringify(createdRun));
         } else {
-          throw new Error('VisualReview-protractor: VisualReview server returned an empty run id when creating a new run. Probably something went wrong with the server.');
+          throw new Error('VisualReview server returned an empty run id when creating a new run. Probably something went wrong with the server.');
         }
       }.bind(this),
       function (err) {
-        throw new Error('VisualReview-protractor: an error occurred while creating a new run on the VisualReview server. ' + err);
+        throw new Error('received error response from VisualReview server: ' + err);
+      });
+  };
+
+  this.initRun = function (projectName, suiteName) {
+    return this._checkServerApiVersion()
+      .then(function () { return this._createRun(projectName, suiteName);}.bind(this))
+      .catch(function (error) {
+        throw new Error('VisualReview-protractor: an error occured while initializing a run: ' + error);
       });
   };
 
@@ -154,7 +172,7 @@ function VisualReview(options) {
             run = results[3];
 
         if (!run) {
-          throw Error('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
+          throw new Error('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
         }
 
         return this._callServer('post', 'runs/' + run.run_id + '/screenshots', null, {
@@ -174,7 +192,7 @@ function VisualReview(options) {
           return response;
         },
         function (err) {
-          throw Error('VisualReview-protractor: Something went wrong while sending a screenshot to the VisualReview server. ' + err);
+          throw new Error('VisualReview-protractor: Something went wrong while sending a screenshot to the VisualReview server. ' + err);
         });
     }.bind(this));
   };
@@ -183,7 +201,7 @@ function VisualReview(options) {
     var defer = q.defer();
 
     this._readRunIdFile().then(function (run) {
-      console.log('VisualReview-protractor: test finished. Your results can be viewed at: ' +
+      console.log('test finished. Your results can be viewed at: ' +
       'http://' + hostname + ':' + port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
       fs.unlink(RUN_PID_FILE, function (err) {
         if (err) {
