@@ -117,7 +117,7 @@ function VisualReview(options) {
           suite_id: result.suiteId
         };
 
-        if (createdRun) {
+        if (result.id) {
           console.log("VisualReview-protractor: created run with ID", createdRun.run_id);
           return this._writeRunIdFile(JSON.stringify(createdRun));
         } else {
@@ -182,7 +182,7 @@ function VisualReview(options) {
   this.cleanup = function () {
     var defer = q.defer();
 
-    return this._readRunIdFile().then(function (run) {
+    this._readRunIdFile().then(function (run) {
       console.log('VisualReview-protractor: test finished. Your results can be viewed at: ' +
       'http://' + hostname + ':' + port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
       fs.unlink(RUN_PID_FILE, function (err) {
