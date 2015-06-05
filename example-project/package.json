@@ -8,5 +8,8 @@
   "license": "Apache License 2.0",
   "dependencies": {
     "protractor": "^1.6.1"
+  },
+  "devDependencies": {
+    "visualreview-protractor": "^0.1.0"
   }
 }
