@@ -22,7 +22,7 @@ var vr = new VisualReview({
 
 exports.config = {
 
-  [..]
+  [..],
 
   /*
       Both .initRun and .cleanup return a q-style promise. If you have some
@@ -33,12 +33,12 @@ exports.config = {
       // Creates a new run under project name 'myProject', suite 'mySuite'.
       // Make sure that there's a project with this name before running the test.
       return vr.initRun('myProject', 'mySuite');
-  }
+  },
 
   afterLaunch: function (exitCode) {
       // finalizes the run, cleans up temporary files
       return vr.cleanup(exitCode);
-  }
+  },
 
   params: {
       visualreview: vr // provides API to your tests
