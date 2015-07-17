@@ -7,7 +7,7 @@ This demo opens a few pages and takes a few screenshots so changes to these page
 
 ### Prerequisites
 * Install [NodeJS](http://nodejs.org/)
-* Install a [Java JRE](http://java.com/nl) (or JDK if you already have one installed)
+* Install a [Java JRE](http://java.com/nl) (or [JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html))
 
 First install the dependencies:
 
