@@ -31,7 +31,7 @@ exports.config = {
   */
   beforeLaunch: function () {
       // Creates a new run under project name 'myProject', suite 'mySuite'.
-      // Projects and suites are created on the fly.
+      // Since VisualReview version 0.1.1, projects and suites are created on the fly.
       return vr.initRun('myProject', 'mySuite');
   },
 
