@@ -3,11 +3,11 @@
 Example on how to use the test visual regression using the VisualReview protractor API.
 This demo opens a few pages and takes a few screenshots so changes to these pages can be evaluated over time.
 
-## Try it out
-
 ### Prerequisites
 * Install [NodeJS](http://nodejs.org/)
 * Install a [Java JRE](http://java.com/nl) (or [JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html))
+
+## Try it
 
 First install the dependencies:
 
