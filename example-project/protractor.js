@@ -10,13 +10,7 @@ exports.config = {
     'spec.js'
   ],
 
-  seleniumAddress: 'http://localhost:4444/wd/hub',
-
   framework: 'jasmine2',
-
-  capabilities: {
-    browserName: 'chrome'
-  },
 
   beforeLaunch: function() {
     // Creates a new run under project name 'myProject', suite 'mySuite'.
