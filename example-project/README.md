@@ -5,6 +5,10 @@ This demo opens a few pages and takes a few screenshots so changes to these page
 
 ## Try it out
 
+### Prerequisites
+* Install [NodeJS](http://nodejs.org/)
+* Install a [Java JRE](http://java.com/nl) (or JDK if you already have one installed)
+
 First install the dependencies:
 
 ```shell
@@ -17,8 +21,7 @@ Install selenium server used by protractor:
 node node_modules/protractor/bin/webdriver-manager update
 ```
 
-Start the [VisualReview server](https://github.com/xebia/VisualReview/releases).
-Download the latest release, extract it and run `./start.sh`.
+Start the [VisualReview server](https://github.com/xebia/VisualReview) by downloading the [latest release](https://github.com/xebia/VisualReview/releases), extracting it and run `./start.sh`.
 
 ### Run
 
