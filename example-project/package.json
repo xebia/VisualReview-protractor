@@ -5,6 +5,7 @@
   "private": true,
   "license": "Apache License 2.0",
   "dependencies": {
+    "jasmine": "^2.3.1",
     "protractor": "^1.6.1",
     "visualreview-protractor": "^0.1.0"
   }
