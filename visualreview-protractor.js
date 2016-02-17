@@ -190,7 +190,7 @@ function VisualReview(options) {
           return response;
         },
         function (err) {
-          throw new Error('VisualReview-protractor: Something went wrong while sending a screenshot to the VisualReview server. ' + err);
+          throw new Error('VisualReview-protractor: Something went wrong while sending a screenshot to the VisualReview server. Was initRun called before starting this test? ' + err);
         });
     }.bind(this));
   };
