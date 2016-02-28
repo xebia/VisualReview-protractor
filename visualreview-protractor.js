@@ -20,180 +20,148 @@ const util = require('util');
 const q = require('q');
 const request = require('request');
 
+const VrClient = require('./lib/vr-client.js');
+
 const RUN_PID_FILE = '.visualreview-runid.pid';
+const LOG_PREFIX = 'VisualReview-protractor: ';
 
-module.exports = VisualReview;
+var _hostname, _port, _client, _metaDataFn, _propertiesFn;
 
-function VisualReview(options) {
-  function defaultMetaDataFn() {
-    return {};
-  }
-
-  function defaultPropertiesFn(capabilities) {
+module.exports = function (options) {
+  _hostname = options.hostname || 'localhost';
+  _port = options.port || 7000;
+  _client = new VrClient(_hostname, _port);
+  _metaDataFn = options.metaDataFn || function () { return {}; };
+  _propertiesFn = options.propertiesFn || function (capabilities) {
     return {
       'os': capabilities.caps_.platform,
       'browser': capabilities.caps_.browserName,
       'version': capabilities.caps_.version
     }
-  }
+  };
 
-  var hostname = options.hostname || 'localhost';
-  var port = options.port || 7000;
-  var metaDataFn = options.metaDataFn || defaultMetaDataFn;
-  var propertiesFn = options.propertiesFn || defaultPropertiesFn;
+  return {
+    initRun: initRun,
+    takeScreenshot: takeScreenshot,
+    cleanup: cleanup
+  };
+};
 
-  this._callServer = function (method, path, jsonBody, multiPartFormOptions) {
-    var defer = q.defer();
-
-    var requestOptions = {
-      method: method.toUpperCase(),
-      uri: 'http://' + hostname + ':' + port + '/api/' + path
-    };
-
-    // for JSON body request
-    if (jsonBody) {
-      requestOptions.body = jsonBody;
-      requestOptions.json = true;
-    }
-
-    // for multipart forms
-    if (multiPartFormOptions) {
-      requestOptions.formData = multiPartFormOptions;
-    }
-
-    request(requestOptions, function (error, response, body) {
-      if (error) {
-        defer.reject(error);
-      } else if (parseInt(response.statusCode) >= 400 && parseInt(response.statusCode) < 600) {
-        defer.reject('The VisualReview server returned status ' + response.statusCode + ": " + body);
-      } else {
-        try {
-          defer.resolve(body);
-        } catch (e) {
-          defer.reject("Could not parse JSON response from server " + e);
-        }
+/**
+ * Initializes a run on the given project's suite name.
+ * @param projectName
+ * @param suiteName
+ * @returns {Promise} a promise which resolves a new Run object with the fields run_id, project_id, suite_id.
+ * 									  If an error has occurred, the promise will reject with a string containing an error message.
+ */
+function initRun (projectName, suiteName) {
+  return _client.createRun(projectName, suiteName).then( function (createdRun) {
+      if (createdRun) {
+        _logMessage('created run with ID ' + createdRun.run_id);
+        return _writeRunIdFile(JSON.stringify(createdRun));
       }
+    }.bind(this),
+    function (err) {
+      _throwError(err);
     });
+}
 
-    return defer.promise;
-  };
+/**
+ * Instructs Protractor to create a screenshot of the current browser and sends it to the VisualReview server.
+ * @param name the screenshot's name.
+ * @returns {Promise}
+ */
+function takeScreenshot (name) {
+  return browser.driver.controlFlow().execute(function () {
 
-  this._writeRunIdFile = function (run) {
-    var defer = q.defer();
-    fs.writeFile(RUN_PID_FILE, run, function (err) {
-      if (err) {
-        defer.reject("VisualReview-protractor: could not write temporary runId file. " + err)
-      } else {
-        defer.resolve(run);
+    return q.all([_getProperties(browser), _getMetaData(browser), browser.takeScreenshot(), _readRunIdFile()]).then(function (results) {
+      var properties = results[0],
+        metaData = results[1],
+        png = results[2],
+        run = results[3];
+
+      if (!run || !run.run_id) {
+        _throwError('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
       }
-    });
 
-    return defer.promise;
-  };
-
-  this._readRunIdFile = function () {
-    var defer = q.defer();
-
-    fs.readFile(RUN_PID_FILE, function (err, data) {
-      if (err) {
-        defer.reject("VisualReview-protractor: could not read temporary run pid file + " + err);
-      } else {
-        defer.resolve(JSON.parse(data));
-      }
-    });
-
-    return defer.promise;
-  };
-
-  this.initRun = function (projectName, suiteName) {
-    return this._callServer('post', 'runs', {
-      'projectName': projectName,
-      'suiteName': suiteName
-    }).then(
-      function (result) {
-        var createdRun = {
-          run_id: result.id,
-          project_id: result.projectId,
-          suite_id: result.suiteId
-        };
-
-        if (createdRun) {
-          console.log("VisualReview-protractor: created run with ID", createdRun.run_id);
-          return this._writeRunIdFile(JSON.stringify(createdRun));
-        } else {
-          throw new Error('VisualReview-protractor: VisualReview server returned an empty run id when creating a new run. Probably something went wrong with the server.');
-        }
-      }.bind(this),
-      function (err) {
-        throw new Error('VisualReview-protractor: an error occurred while creating a new run on the VisualReview server. ' + err);
-      });
-  };
-
-  this._getProperties = function (browser) {
-    return browser.getCapabilities()
-      .then(propertiesFn)
-      .then(function (properties) {
-        return browser.manage().window().getSize().then(function (size) {
-          properties.resolution = size.width + 'x' + size.height;
-          return properties;
+      return _client.sendScreenshot(name, run.run_id, metaData, properties, png)
+        .catch(function (err) {
+          _throwError('Something went wrong while sending a screenshot to the VisualReview server. ' + err);
         });
-      });
-  };
+    });
+  }.bind(this));
+}
 
-  this._getMetaData = function (browser) {
-    return browser.getCapabilities().then(metaDataFn);
-  };
+/**
+ * Cleans up any created temporary files.
+ * Call this in Protractor's afterLaunch configuration function.
+ * @param exitCode Protractor's exit code, used to indicate if the test run generated errors.
+ * @returns {Promise}
+ */
+function cleanup (exitCode) {
+  var defer = q.defer();
 
-  this.takeScreenshot = function (name) {
-    return browser.driver.controlFlow().execute(function () {
+  _readRunIdFile().then(function (run) {
+    _logMessage('test finished. Your results can be viewed at: ' +
+      'http://' + _hostname + ':' + _port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
+    fs.unlink(RUN_PID_FILE, function (err) {
+      if (err) {
+        defer.reject(err);
+      } else {
+        defer.resolve();
+      }
+    });
+  });
 
-      return q.all([this._getProperties(browser), this._getMetaData(browser), browser.takeScreenshot(), this._readRunIdFile()]).then(function (results) {
-        var properties = results[0],
-            metaData = results[1],
-            png = results[2],
-            run = results[3];
+  return defer.promise;
+}
 
-        if (!run) {
-          throw Error('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
-        }
+function _writeRunIdFile (run) {
+  var defer = q.defer();
+  fs.writeFile(RUN_PID_FILE, run, function (err) {
+    if (err) {
+      defer.reject("VisualReview-protractor: could not write temporary runId file. " + err)
+    } else {
+      defer.resolve(run);
+    }
+  });
 
-        return this._callServer('post', 'runs/' + run.run_id + '/screenshots', null, {
-          meta: JSON.stringify(metaData),
-          properties: JSON.stringify(properties),
-          screenshotName: name,
-          file: {
-            value: new Buffer(png, 'base64'),
-            options: {
-              filename: 'file.png',
-              contentType: 'image/png'
-            }
-          }
-        })
-      }.bind(this)).then(
-        function (response) {
-          return response;
-        },
-        function (err) {
-          throw Error('VisualReview-protractor: Something went wrong while sending a screenshot to the VisualReview server. ' + err);
-        });
-    }.bind(this));
-  };
+  return defer.promise;
+}
 
-  this.cleanup = function () {
-    var defer = q.defer();
+function _readRunIdFile () {
+  var defer = q.defer();
 
-    return this._readRunIdFile().then(function (run) {
-      console.log('VisualReview-protractor: test finished. Your results can be viewed at: ' +
-      'http://' + hostname + ':' + port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
-      fs.unlink(RUN_PID_FILE, function (err) {
-        if (err) {
-          defer.reject(err);
-        } else {
-          defer.resolve();
-        }
+  fs.readFile(RUN_PID_FILE, function (err, data) {
+    if (err) {
+      defer.reject("VisualReview-protractor: could not read temporary run pid file + " + err);
+    } else {
+      defer.resolve(JSON.parse(data));
+    }
+  });
+
+  return defer.promise;
+}
+
+function _getProperties (browser) {
+  return browser.getCapabilities()
+    .then(_propertiesFn)
+    .then(function (properties) {
+      return browser.manage().window().getSize().then(function (size) {
+        properties.resolution = size.width + 'x' + size.height;
+        return properties;
       });
     });
+}
 
-    return defer.promise;
-  }
+function _getMetaData (browser) {
+  return browser.getCapabilities().then(_metaDataFn);
+}
+
+function _logMessage (message) {
+  console.log(LOG_PREFIX + message);
+}
+
+function _throwError (message) {
+  throw new Error(LOG_PREFIX + message);
 }
