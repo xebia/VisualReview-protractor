@@ -1,5 +1,5 @@
 # VisualReview API for Protractor
-Provides an API to send screenshots to [VisualReview](https://github.com/xebia/VisualReview) from your [Protractor](https://github.com/angular/protractor) tests.
+Provides an API to send screenshots to [VisualReview](https://github.com/xebia/VisualReview) from your [Protractor](https://github.com/angular/protractor) tests. See [the example](example-project/README.md) for a quick demo.
 
 ## Requirements
 Requires Protractor 1.4.0 or higher.
@@ -22,7 +22,7 @@ var vr = new VisualReview({
 
 exports.config = {
 
-  [..]
+  [..],
 
   /*
       Both .initRun and .cleanup return a q-style promise. If you have some
@@ -31,14 +31,14 @@ exports.config = {
   */
   beforeLaunch: function () {
       // Creates a new run under project name 'myProject', suite 'mySuite'.
-      // Make sure that there's a project with this name before running the test.
+      // Since VisualReview version 0.1.1, projects and suites are created on the fly.
       return vr.initRun('myProject', 'mySuite');
-  }
+  },
 
   afterLaunch: function (exitCode) {
       // finalizes the run, cleans up temporary files
       return vr.cleanup(exitCode);
-  }
+  },
 
   params: {
       visualreview: vr // provides API to your tests
