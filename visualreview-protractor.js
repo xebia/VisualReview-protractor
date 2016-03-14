@@ -55,7 +55,7 @@ module.exports = function (options) {
  */
 function initRun (projectName, suiteName) {
   if(_disabled) {
-    return;
+    return q.resolve();
   }
   return _client.createRun(projectName, suiteName).then( function (createdRun) {
       if (createdRun) {
@@ -75,7 +75,7 @@ function initRun (projectName, suiteName) {
  */
 function takeScreenshot (name) {
   if(_disabled) {
-    return;
+    return q.resolve();
   }
 
   return browser.driver.controlFlow().execute(function () {
