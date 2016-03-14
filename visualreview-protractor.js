@@ -28,6 +28,7 @@ var _hostname, _port, _client, _metaDataFn, _propertiesFn;
 module.exports = function (options) {
   _hostname = options.hostname || 'localhost';
   _port = options.port || 7000;
+  _disabled = options.disabled || false;
   _client = new VrClient(_hostname, _port);
   _metaDataFn = options.metaDataFn || function () { return {}; };
   _propertiesFn = options.propertiesFn || function (capabilities) {
@@ -53,6 +54,9 @@ module.exports = function (options) {
  * 									  If an error has occurred, the promise will reject with a string containing an error message.
  */
 function initRun (projectName, suiteName) {
+  if(_disabled) {
+    return;
+  }
   return _client.createRun(projectName, suiteName).then( function (createdRun) {
       if (createdRun) {
         _logMessage('created run with ID ' + createdRun.run_id);
@@ -70,6 +74,10 @@ function initRun (projectName, suiteName) {
  * @returns {Promise}
  */
 function takeScreenshot (name) {
+  if(_disabled) {
+    return;
+  }
+
   return browser.driver.controlFlow().execute(function () {
 
     return q.all([_getProperties(browser), _getMetaData(browser), browser.takeScreenshot(), _readRunIdFile()]).then(function (results) {
@@ -97,6 +105,10 @@ function takeScreenshot (name) {
  * @returns {Promise}
  */
 function cleanup (exitCode) {
+  if(_disabled) {
+    return q.resolve();
+  }
+
   var defer = q.defer();
 
   _readRunIdFile().then(function (run) {
