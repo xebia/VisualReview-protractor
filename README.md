@@ -58,6 +58,31 @@ describe('angularjs homepage', function() {
 });
 ```
 
+## Config
+
+The VisualReview accepts a config object such as:
+
+```
+{
+  hostname: 'localhost',
+  port: 7000
+}
+```
+
+Other options are:
+
+* disabled, default false, a boolean value whether to disable the actual calls to the VisualReview object.
+* propertiesFn, a function with a capabilities argument that is used to uniquely identify a screenshot. For example the following configuration ommits the browser version as a screenshot identifying property:
+
+```
+propertiesFn: function (capabilities) {
+    return {
+      os: capabilities.caps_.platform,
+      browser: capabilities.caps_.browserName
+    };
+  }
+```
+
 ## License
 Copyright © 2015 Xebia
 
