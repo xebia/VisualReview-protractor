@@ -33,9 +33,9 @@ module.exports = function (options) {
   _metaDataFn = options.metaDataFn || function () { return {}; };
   _propertiesFn = options.propertiesFn || function (capabilities) {
     return {
-      'os': capabilities.caps_.platform,
-      'browser': capabilities.caps_.browserName,
-      'version': capabilities.caps_.version
+      'os': capabilities.get('platform'),
+      'browser': capabilities.get('browserName'),
+      'version': capabilities.get('version')
     }
   };
 
