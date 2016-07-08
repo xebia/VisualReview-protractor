@@ -33,6 +33,11 @@ exports.config = {
       // Creates a new run under project name 'myProject', suite 'mySuite'.
       // Since VisualReview version 0.1.1, projects and suites are created on the fly.
       return vr.initRun('myProject', 'mySuite');
+
+      // additionally you can provide the branchName this run has been initiated on.
+      // This defaults to "master". Uses this to create a baseline for a specific feature branch
+      // For example:
+      // return vr.initRun('myProject', 'mySuite', 'my-feature-branch');
   },
 
   afterLaunch: function (exitCode) {

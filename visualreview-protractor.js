@@ -50,14 +50,15 @@ module.exports = function (options) {
  * Initializes a run on the given project's suite name.
  * @param projectName
  * @param suiteName
- * @returns {Promise} a promise which resolves a new Run object with the fields run_id, project_id, suite_id.
+ * @param branchName
+ * @returns {Promise} a promise which resolves a new Run object with the fields run_id, project_id, suite_id and branch_name.
  * 									  If an error has occurred, the promise will reject with a string containing an error message.
  */
-function initRun (projectName, suiteName) {
+function initRun (projectName, suiteName, branchName) {
   if(_disabled) {
     return q.resolve();
   }
-  return _client.createRun(projectName, suiteName).then( function (createdRun) {
+  return _client.createRun(projectName, suiteName, branchName).then( function (createdRun) {
       if (createdRun) {
         _logMessage('created run with ID ' + createdRun.run_id);
         return _writeRunIdFile(JSON.stringify(createdRun));
