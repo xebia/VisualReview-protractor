@@ -34,8 +34,9 @@ exports.config = {
       // Since VisualReview version 0.1.1, projects and suites are created on the fly.
       return vr.initRun('myProject', 'mySuite');
 
-      // additionally you can provide the branchName this run has been initiated on.
+      // Additionally you can provide the branchName this run has been initiated on.
       // This defaults to "master". Uses this to create a baseline for a specific feature branch
+      // Note that this feature requires VisualReview server version 0.1.5 or higher.
       // For example:
       // return vr.initRun('myProject', 'mySuite', 'my-feature-branch');
   },
@@ -88,7 +89,7 @@ propertiesFn: function (capabilities) {
   }
 ```
 
-* compareSettings, to define the precision of each pixel comparison. The value '0' will result in a failure whenever a difference has been found. Default '0'.
+* compareSettings, to define the precision of each pixel comparison. The value '0' will result in a failure whenever a difference has been found. Default '0'.This feature requires VisualReview server version 0.1.5 or higher.
 
 ```
 compareSettings: {
