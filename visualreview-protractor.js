@@ -23,7 +23,7 @@ const VrClient = require('./lib/vr-client.js');
 const RUN_PID_FILE = '.visualreview-runid.pid';
 const LOG_PREFIX = 'VisualReview-protractor: ';
 
-var _hostname, _port, _client, _metaDataFn, _propertiesFn;
+var _hostname, _port, _client, _metaDataFn, _propertiesFn, _compareSettingsFn;
 
 module.exports = function (options) {
   _hostname = options.hostname || 'localhost';
@@ -38,6 +38,7 @@ module.exports = function (options) {
       'version': capabilities.get('version')
     }
   };
+  _compareSettingsFn = options.compareSettings || null;
 
   return {
     initRun: initRun,
@@ -84,6 +85,7 @@ function takeScreenshot (name) {
     return q.all([_getProperties(browser), _getMetaData(browser), browser.takeScreenshot(), _readRunIdFile()]).then(function (results) {
       var properties = results[0],
         metaData = results[1],
+        compareSettings = _compareSettingsFn,
         png = results[2],
         run = results[3];
 
@@ -91,7 +93,7 @@ function takeScreenshot (name) {
         _throwError('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
       }
 
-      return _client.sendScreenshot(name, run.run_id, metaData, properties, png)
+      return _client.sendScreenshot(name, run.run_id, metaData, properties, compareSettings, png)
         .catch(function (err) {
           _throwError('Something went wrong while sending a screenshot to the VisualReview server. ' + err);
         });
