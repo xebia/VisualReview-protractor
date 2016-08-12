@@ -1,6 +1,6 @@
 {
   "name": "visualreview-protractor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Provides an API to send screenshots to VisualReview from Protractor tests.",
   "homepage": "https://github.com/xebia/VisualReview-protractor",
   "author": "Xebia",
