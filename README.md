@@ -88,6 +88,14 @@ propertiesFn: function (capabilities) {
   }
 ```
 
+* compareSettings, to define the precision of each pixel comparison. The value '0' will result in a failure whenever a difference has been found. Default '0'.
+
+```
+compareSettings: {
+    precision: 7
+}
+```
+
 ## License
 Copyright © 2015 Xebia
 
