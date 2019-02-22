@@ -17,7 +17,9 @@ Then configure visualreview-protractor in your protractor configuration file. He
 const VisualReview = require('visualreview-protractor');
 var vr = new VisualReview({
   hostname: 'localhost',
-  port: 7000
+  port: 7000,
+  scheme: 'https', //(optional: http|https, http is used if not specified)
+  strictSSL: true //(optional: true|false, disable ssl certificate check, true if not specified)
 });
 
 exports.config = {

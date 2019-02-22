@@ -23,20 +23,22 @@ const VrClient = require('./lib/vr-client.js');
 const RUN_PID_FILE = '.visualreview-runid.pid';
 const LOG_PREFIX = 'VisualReview-protractor: ';
 
-var _hostname, _port, _client, _metaDataFn, _propertiesFn, _compareSettingsFn;
+var _hostname, _port, _client, _metaDataFn, _propertiesFn, _compareSettingsFn, _scheme, _strictSSL;
 
 module.exports = function (options) {
   _hostname = options.hostname || 'localhost';
   _port = options.port || 7000;
+  _scheme = options.scheme || 'http';
+  _strictSSL = options.strictSSL === false ? false : true;
   _disabled = options.disabled || false;
-  _client = new VrClient(_hostname, _port);
+  _client = new VrClient(_hostname, _port, _scheme, _strictSSL);
   _metaDataFn = options.metaDataFn || function () { return {}; };
   _propertiesFn = options.propertiesFn || function (capabilities) {
     return {
       'os': capabilities.get('platform'),
       'browser': capabilities.get('browserName'),
       'version': capabilities.get('version')
-    }
+    };
   };
   _compareSettingsFn = options.compareSettings || null;
 
@@ -116,7 +118,7 @@ function cleanup (exitCode) {
 
   _readRunIdFile().then(function (run) {
     _logMessage('test finished. Your results can be viewed at: ' +
-      'http://' + _hostname + ':' + _port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
+      _scheme+'://' + _hostname + ':' + _port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
     fs.unlink(RUN_PID_FILE, function (err) {
       if (err) {
         defer.reject(err);
