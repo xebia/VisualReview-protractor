@@ -19,7 +19,8 @@ var vr = new VisualReview({
   hostname: 'localhost',
   port: 7000,
   scheme: 'https', //(optional: http|https, http is used if not specified)
-  strictSSL: true //(optional: true|false, disable ssl certificate check, true if not specified)
+  strictSSL: true, //(optional: true|false, disable ssl certificate check, true if not specified)
+  catchErrors: false //(optional: true|false, disable error throwing to not influence the test progress in case of vr errors, false if not specified)
 });
 
 exports.config = {
