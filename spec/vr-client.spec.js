@@ -1,18 +1,18 @@
 
 const VrClient = require('../lib/vr-client');
-
+const nock = require('nock');
 
 describe("Test vr-client", function() {
 
         it("Client with all parameters should be created", function() {
 
-            let hostname = 'localhost';
+            hostname = 'localhost';
             port = 7000;
             scheme = 'http';
             strictSSL = true;
             catchErrors = false;
 
-            let vr = new VrClient(hostname, port, scheme, strictSSL, catchErrors);
+            vr = new VrClient(hostname, port, scheme, strictSSL, catchErrors);
 
             expect(vr).toBeDefined();
 
@@ -21,31 +21,65 @@ describe("Test vr-client", function() {
 
     it("Client with required parameters should be created", function() {
 
-        let hostname = 'localhost';
+        hostname = 'localhost';
         port = 7000;
 
-        let vr = new VrClient(hostname, port);
+        vr = new VrClient(hostname, port);
 
         expect(vr).toBeDefined();
 
     });
 
-    xit("strictSSL = false param should set disable certificate check in http-request-options", function() {
+    it("Scheme http should call http api endpoint", function() {
 
-        let hostname = 'localhost';
+         requestMockHttp = nock('http://localhost:7000')
+            .post('/api/runs')
+            .reply(200, {
+                id: 1,
+                projectId: 1,
+                suiteId: 1,
+                branchName: 'Test'
+            });
+
+
+        hostname = 'localhost';
         port = 7000;
         scheme = 'http';
         strictSSL = false;
         catchErrors = false;
 
-        let vr = new VrClient(hostname, port, scheme, strictSSL, catchErrors);
+        vr = new VrClient(hostname, port, scheme, strictSSL, catchErrors);
 
         vr.createRun('TestProject', 'TestSuite', 'TestBranch');
 
-        expect(requestOptions.method).toContain('PAUL');
+        requestMockHttp.isDone();
 
-        //TODO
-        // https://lazamar.github.io/testing-http-requests-with-jasmine/
+
+    });
+
+    it("Scheme https should call https api endpoint", function() {
+
+        requestMockHttps = nock('https://localhost:443')
+            .post('/api/runs')
+            .reply(200, {
+                id: 1,
+                projectId: 1,
+                suiteId: 1,
+                branchName: 'Test'
+            });
+
+
+        hostname = 'localhost';
+        port = 443;
+        scheme = 'https';
+        strictSSL = false;
+        catchErrors = false;
+
+        vr = new VrClient(hostname, port, scheme, strictSSL, catchErrors);
+
+        vr.createRun('TestProject', 'TestSuite', 'TestBranch');
+
+        requestMockHttps.isDone();
 
     });
 
