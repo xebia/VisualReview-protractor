@@ -38,7 +38,7 @@
   ],
   "main": "visualreview-protractor.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jasmine"
   },
   "license": "Apache License 2.0",
   "dependencies": {
@@ -47,5 +47,9 @@
   },
   "peerDependencies": {
     "protractor": ">= 1.4"
+  },
+  "devDependencies": {
+    "jasmine": "^3.3.1",
+    "nock": "^10.0.6"
   }
 }

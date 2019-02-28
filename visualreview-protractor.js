@@ -23,15 +23,16 @@ const VrClient = require('./lib/vr-client.js');
 const RUN_PID_FILE = '.visualreview-runid.pid';
 const LOG_PREFIX = 'VisualReview-protractor: ';
 
-var _hostname, _port, _client, _metaDataFn, _propertiesFn, _compareSettingsFn, _scheme, _strictSSL;
+var _hostname, _port, _client, _metaDataFn, _propertiesFn, _compareSettingsFn, _scheme, _strictSSL, _catchErrors;
 
 module.exports = function (options) {
   _hostname = options.hostname || 'localhost';
   _port = options.port || 7000;
   _scheme = options.scheme || 'http';
   _strictSSL = options.strictSSL === false ? false : true;
+  _catchErrors = options.catchErrors === false ? false : true;
   _disabled = options.disabled || false;
-  _client = new VrClient(_hostname, _port, _scheme, _strictSSL);
+  _client = new VrClient(_hostname, _port, _scheme, _strictSSL, _catchErrors);
   _metaDataFn = options.metaDataFn || function () { return {}; };
   _propertiesFn = options.propertiesFn || function (capabilities) {
     return {
@@ -178,5 +179,13 @@ function _logMessage (message) {
 }
 
 function _throwError (message) {
-  throw new Error(LOG_PREFIX + message);
+  if (_catchErrors) {
+    //do not throw errors, just write them to console
+    console.log(LOG_PREFIX + message);
+  }
+  else {
+    //throw errors
+    throw new Error(LOG_PREFIX + message);
+  }
+
 }
