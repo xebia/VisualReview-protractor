@@ -1,7 +1,15 @@
-const VisualReview = require('visualreview-protractor');
+//Change this to use the package.json version after the release
+var VisualReview = require('../visualreview-protractor');
 var vr = new VisualReview({
   hostname: 'localhost',
-  port: 7000
+  port: 80,
+  projectName: 'Example Project Name',
+  // Global Properties Function - Only get the Browser
+  propertiesFn: (capabilities) => {
+    return {
+      browser: capabilities.get('browserName')
+    };
+  }
 });
 
 exports.config = {
@@ -10,21 +18,19 @@ exports.config = {
     'spec.js'
   ],
 
+  capabilities: {
+    browserName: 'chrome',
+    shardTestFiles: false,
+    maxInstances: 25
+  },
+
   framework: 'jasmine2',
 
-  beforeLaunch: function() {
-    // Creates a new run under project name 'myProject', suite 'mySuite'.
-    return vr.initRun('myProject', 'mySuite');
-  },
-
-  afterLaunch: function(exitCode) {
-    // finalizes the run, cleans up temporary files
-    return vr.cleanup(exitCode);
-  },
+  seleniumAddress: null,
 
   // expose VisualReview protractor api in tests
   params: {
-    visualreview: vr 
+    visualreview: vr
   }
 
 };

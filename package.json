@@ -34,6 +34,7 @@
     "LICENSE",
     "README.md",
     "visualreview-protractor.js",
+    "visualreview-run.js",
     "lib/"
   ],
   "main": "visualreview-protractor.js",

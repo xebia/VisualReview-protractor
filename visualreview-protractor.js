@@ -14,169 +14,99 @@
  limitations under the License.
  */
 
-const fs = require('fs');
-const q = require('q');
-const request = require('request');
+/**
+ * Global Options
+ * @typedef {Object} GlobalOptions
+ * @property {String} projectName The project name. Can only be defined here.
+ * @property {String} host Host. Can only be defined here.
+ * @property {Number} port Host port number. Can only be defined here.
+ * @property {Boolean} disabled True if we don't want to take screenshots at all.
+ * @property {Boolean} strictSSL True to use strict ssl.
+ * @property {String} scheme Http or Https
+ * @property {function} propertiesFn function to use to extract properties.
+ *                      Can be overrided on the suite options.
+ *                      Can be overrided on the screenshot options.
+ *
+ * Suite Options
+ * @typedef {Object} SuiteOptions
+ * @property {String} suiteName The suite name. Can only be defined here.
+ * @property {Boolean} disabled True if we don't want to take screenshots on this suite.
+ *                      It will be overrided if the global options disabled is true.
+ * @property {function} propertiesFn function to use to extract properties.
+ *                      Can be overrided on the screenshot options.
+ *                      It will override the global options property.
+ */
 
-const VrClient = require('./lib/vr-client.js');
+var VisualReviewRun = require('./visualreview-run');
 
-const RUN_PID_FILE = '.visualreview-runid.pid';
-const LOG_PREFIX = 'VisualReview-protractor: ';
+/**
+ * This class contains the global options for the Visual Review
+ * Its main purpose is to store the global options and provide the instances for the runs.
+ * This should be the only one to have the host, port and projectName properties.
+ * Even so, they can be override by the suite options.
+ *
+ * @class VisualReview
+ */
+module.exports = class VisualReview {
 
-var _hostname, _port, _client, _metaDataFn, _propertiesFn, _compareSettingsFn, _scheme, _strictSSL;
+  /**
+   * Contructor of the class
+   * @param {GlobalOptions} options of the project
+   * @example
+   *     {
+   *       hostname: 'localhost',
+   *       port: 7000,
+   *       projectName: 'EXAMPLE PROJECT',
+   *       disabled: false,
+   *       propertiesFn: function (capabilities) {
+   *           return {
+   *             os: capabilities.get('platform'),
+   *             browser: capabilities.get('browserName')
+   *           };
+   *       }
+   *     }
+   */
+  constructor(options) {
 
-module.exports = function (options) {
-  _hostname = options.hostname || 'localhost';
-  _port = options.port || 7000;
-  _scheme = options.scheme || 'http';
-  _strictSSL = options.strictSSL === false ? false : true;
-  _disabled = options.disabled || false;
-  _client = new VrClient(_hostname, _port, _scheme, _strictSSL);
-  _metaDataFn = options.metaDataFn || function () { return {}; };
-  _propertiesFn = options.propertiesFn || function (capabilities) {
-    return {
-      'os': capabilities.get('platform'),
-      'browser': capabilities.get('browserName'),
-      'version': capabilities.get('version')
+    if (!options.projectName) {
+      throw new Error('Project Name must be defined.');
+    }
+    if (!options.hostname) {
+      throw new Error('Hostname must be defined.');
+    }
+    if (!options.port) {
+      throw new Error('Port must be defined.');
+    }
+
+    //Get Properties Function. If not defined uses the default
+    this.propertiesFn = options.propertiesFn || function (capabilities) {
+      return {
+        os: capabilities.get('platform'),
+        browser: capabilities.get('browserName'),
+        version: capabilities.get('version')
+      }
     };
-  };
-  _compareSettingsFn = options.compareSettings || null;
 
-  return {
-    initRun: initRun,
-    takeScreenshot: takeScreenshot,
-    cleanup: cleanup
-  };
+
+    this.globalOptions = options;
+  }
+
+
+  /**
+   * Retrieves a VisualReviewRun instance that will be used individually for each test suite
+   * @param {SuiteOptions} suiteOptions All the suite options that the user wants to add or override
+   * @returns {VisualReviewRun} VisualReviewRun with the suite specific options
+   * @example
+   *     {
+   *        suiteName: 'My Suite',
+   *        propertiesFn: (capabilities, defaultFn) => {
+   *          var defaultCapabiolities = defaultFn;
+   *          return def;
+   *     }
+   */
+  getVisualReviewRun(suiteOptions) {
+    return new VisualReviewRun(this.globalOptions, suiteOptions);
+  }
+
 };
 
-/**
- * Initializes a run on the given project's suite name.
- * @param projectName
- * @param suiteName
- * @param branchName
- * @returns {Promise} a promise which resolves a new Run object with the fields run_id, project_id, suite_id and branch_name.
- * 									  If an error has occurred, the promise will reject with a string containing an error message.
- */
-function initRun (projectName, suiteName, branchName) {
-  if(_disabled) {
-    return q.resolve();
-  }
-  return _client.createRun(projectName, suiteName, branchName).then( function (createdRun) {
-      if (createdRun) {
-        _logMessage('created run with ID ' + createdRun.run_id);
-        return _writeRunIdFile(JSON.stringify(createdRun));
-      }
-    }.bind(this),
-    function (err) {
-      _throwError(err);
-    });
-}
-
-/**
- * Instructs Protractor to create a screenshot of the current browser and sends it to the VisualReview server.
- * @param name the screenshot's name.
- * @returns {Promise}
- */
-function takeScreenshot (name) {
-  if(_disabled) {
-    return q.resolve();
-  }
-
-  return browser.driver.controlFlow().execute(function () {
-
-    return q.all([_getProperties(browser), _getMetaData(browser), browser.takeScreenshot(), _readRunIdFile()]).then(function (results) {
-      var properties = results[0],
-        metaData = results[1],
-        compareSettings = _compareSettingsFn,
-        png = results[2],
-        run = results[3];
-
-      if (!run || !run.run_id) {
-        _throwError('VisualReview-protractor: Could not send screenshot to VisualReview server, could not find any run ID. Was initRun called before starting this test? See VisualReview-protractor\'s documentation for more details on how to set this up.');
-      }
-
-      return _client.sendScreenshot(name, run.run_id, metaData, properties, compareSettings, png)
-        .catch(function (err) {
-          _throwError('Something went wrong while sending a screenshot to the VisualReview server. ' + err);
-        });
-    });
-  }.bind(this));
-}
-
-/**
- * Cleans up any created temporary files.
- * Call this in Protractor's afterLaunch configuration function.
- * @param exitCode Protractor's exit code, used to indicate if the test run generated errors.
- * @returns {Promise}
- */
-function cleanup (exitCode) {
-  if(_disabled) {
-    return q.resolve();
-  }
-
-  var defer = q.defer();
-
-  _readRunIdFile().then(function (run) {
-    _logMessage('test finished. Your results can be viewed at: ' +
-      _scheme+'://' + _hostname + ':' + _port + '/#/' + run.project_id + '/' + run.suite_id + '/' + run.run_id + '/rp');
-    fs.unlink(RUN_PID_FILE, function (err) {
-      if (err) {
-        defer.reject(err);
-      } else {
-        defer.resolve();
-      }
-    });
-  });
-
-  return defer.promise;
-}
-
-function _writeRunIdFile (run) {
-  var defer = q.defer();
-  fs.writeFile(RUN_PID_FILE, run, function (err) {
-    if (err) {
-      defer.reject("VisualReview-protractor: could not write temporary runId file. " + err)
-    } else {
-      defer.resolve(run);
-    }
-  });
-
-  return defer.promise;
-}
-
-function _readRunIdFile () {
-  var defer = q.defer();
-
-  fs.readFile(RUN_PID_FILE, function (err, data) {
-    if (err) {
-      defer.reject("VisualReview-protractor: could not read temporary run pid file + " + err);
-    } else {
-      defer.resolve(JSON.parse(data));
-    }
-  });
-
-  return defer.promise;
-}
-
-function _getProperties (browser) {
-  return browser.getCapabilities()
-    .then(_propertiesFn)
-    .then(function (properties) {
-      return browser.manage().window().getSize().then(function (size) {
-        properties.resolution = size.width + 'x' + size.height;
-        return properties;
-      });
-    });
-}
-
-function _getMetaData (browser) {
-  return browser.getCapabilities().then(_metaDataFn);
-}
-
-function _logMessage (message) {
-  console.log(LOG_PREFIX + message);
-}
-
-function _throwError (message) {
-  throw new Error(LOG_PREFIX + message);
-}
