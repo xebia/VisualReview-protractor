@@ -1,21 +1,26 @@
 # VisualReview API for Protractor
 Provides an API to send screenshots to [VisualReview](https://github.com/xebia/VisualReview) from your [Protractor](https://github.com/angular/protractor) tests. See [the example](example-project/README.md) for a quick demo.
 
-## Requirements
-Requires Protractor 1.4.0 or higher.
 
-## Getting started
+## Requirements
+* Requires Protractor 1.4.0 or higher.
+* Requires node 6.4.0 or higher.
+
+
+## Usage
+### Getting started
 First add visualreview-protractor to your protractor project's dependencies.
 
 ```shell
-npm install visualreview-protractor --save-dev
+npm install visualreview-protractor --save
 ```
 
-Then configure visualreview-protractor in your protractor configuration file. Here's an example:
+### Configure Visual Review on the Protractor config file
+To configure visualreview-protractor in your protractor configuration file you will need to add the following information:
 
 ```javascript
 const VisualReview = require('visualreview-protractor');
-var vr = new VisualReview({
+const vr = new VisualReview({
   hostname: 'localhost',
   port: 7000,
   scheme: 'https', //(optional: http|https, http is used if not specified)
@@ -26,78 +31,228 @@ exports.config = {
 
   [..],
 
-  /*
-      Both .initRun and .cleanup return a q-style promise. If you have some
-      other things happening in before- and afterLaunch, be sure to
-      return these promise objects.
-  */
-  beforeLaunch: function () {
-      // Creates a new run under project name 'myProject', suite 'mySuite'.
-      // Since VisualReview version 0.1.1, projects and suites are created on the fly.
-      return vr.initRun('myProject', 'mySuite');
-
-      // Additionally you can provide the branchName this run has been initiated on.
-      // This defaults to "master". Uses this to create a baseline for a specific feature branch
-      // Note that this feature requires VisualReview server version 0.1.5 or higher.
-      // For example:
-      // return vr.initRun('myProject', 'mySuite', 'my-feature-branch');
-  },
-
-  afterLaunch: function (exitCode) {
-      // finalizes the run, cleans up temporary files
-      return vr.cleanup(exitCode);
-  },
-
   params: {
       visualreview: vr // provides API to your tests
   }
 }
 ```
 
-Now you can use the visualreview-protractor API in your tests. For example:
+Optionally you can configure default parameters to be used in each run.
 
 ```javascript
-var vr = browser.params.visualreview;
-describe('angularjs homepage', function() {
-  it('should open the homepage', function() {
-    browser.get('https://docs.angularjs.org');
-    vr.takeScreenshot('AngularJS-homepage');
+new VisualReview({
+  hostname: 'localhost',
+  port: 7000,
+  projectName: 'myProject',
+  compareSettings: {
+    precision: 90
+  }
+});
+```
+
+Note that `host` and `port` should only be defined here. The remaining can be overwritten by run or by screenshot.
+
+### Configure a run on your tests
+Now you can use the visualreview-protractor API in your tests.
+
+Start by initiating a run under the current project and the given suite. Remember to return the promises from `.initRun()` and `.cleanup()`.
+
+```javascript
+const vr = browser.params.visualreview;
+const vrRun = vr.getVisualReviewRun({
+  suiteName: 'mySuite',
+  compareSettings: {
+    precision: 50
+  }
+});
+
+describe('angularjs homepage', function () {
+  beforeAll(function () {
+    // Creates a new run under project name 'myProject', suite 'mySuite'.
+    return vrRun.initRun();
+  });
+
+  afterAll(function () {
+    return vrRun.cleanup();
   });
 });
 ```
 
-## Config
+### Take a Screenshot
+
+Now you can use the run instance to take screenshots.
+
+To take a screenshot of the viewport:
+
+```javascript
+describe('angularjs homepage', function() {
+  it('should open the homepage', function () {
+    browser.get('https://docs.angularjs.org');
+    vrRun.takeScreenshot('AngularJS-homepage');
+  });
+});
+```
+
+To take a screenshot of the viewport, excluding some parts:
+
+```javascript
+describe('angularjs homepage', function() {
+  it('should open the homepage', function () {
+    browser.get('https://docs.angularjs.org');
+
+    vrRun.takeScreenshot('AngularJS-homepage', {
+      exclude: [
+        { x: 0, y: 0, height: 100, width: 100 },
+        element(by.css('.main-body-grid div.grid-right')),
+        element(by.css('.brand'))
+      ]
+    });
+  });
+});
+```
+
+To take a screenshot of a single element, excluding some parts:
+
+```javascript
+describe('angularjs homepage', function() {
+  it('should open the homepage', function () {
+    browser.get('https://docs.angularjs.org');
+
+    vrRun.takeScreenshot('Header', {
+      include: element(by.css('.main-body-grid div.grid-left')),
+      exclude: [
+        element(by.css('[href="api/ng/function/angular.bind"]'))
+      ]
+    });
+  });
+});
+```
+
+
+## API
+### `VisualReview(options)`
+
+Returns a `VisualReview` instance.
+
+#### `options`
+Accepts `options` marked with "✔ Global".
+
+### `VisualReview.getVisualReviewRun(options)`
+
+Returns a `VisualReviewRun` instance.
+
+#### `options`
+Accepts `options` marked with "✔ Run".
+
+### `VisualReviewRun.takeScreenshot(name, options)`
+
+#### `name`
+
+Type: `string`
+Default: `undefined`
+
+The name of the project.
+
+#### `options`
+Accepts `options` marked with "✔ Screenshot".
+
+
+## Options
 
 The VisualReview accepts a config object such as:
 
-```
+```javascript
 {
   hostname: 'localhost',
-  port: 7000
+  port: 7000,
+  projectName: 'myProject',
+  suiteName: 'mySuite',
+  disabled: false,
+  compareSettings: {
+    precision: 90
+  },
+  propertiesFn: () => ({ someProperty: 'someValue' }),
+  include: element(by.css('.some-element')),
+  exclude: [
+    { x: 0, y: 0, height: 100, width: 100 },
+    element(by.css('.some-element-child'))
+  ]
 }
 ```
 
-Other options are:
+### `hostname`
 
-* disabled, default false, a boolean value whether to disable the actual calls to the VisualReview object.
-* propertiesFn, a function with a capabilities argument that is used to uniquely identify a screenshot. For example the following configuration omits the browser version as a screenshot identifying property:
+Type: `string`
+Default: `undefined`
+Support: ✔ Global | ✘ Run | ✘ Screenshot
 
-```
-propertiesFn: function (capabilities) {
-    return {
-      'os': capabilities.get('platform'),
-      'browser': capabilities.get('browserName')
-    };
-  }
-```
+The hostname of the VisualReview server.
 
-* compareSettings, to define the precision of each pixel comparison. The value '0' will result in a failure whenever a difference has been found. Default '0'. This feature requires VisualReview server version 0.1.5 or higher.
+### `port`
 
-```
-compareSettings: {
-    precision: 7
-}
-```
+Type: `number`
+Default: `undefined`
+Support: ✔ Global | ✘ Run | ✘ Screenshot
+
+The port of the VisualReview server.
+
+### `projectName`
+
+Type: `string`
+Default: `undefined`
+Support: ✔ Global | ✘ Run | ✘ Screenshot
+
+The name of the project.
+
+### `disabled`
+
+Type: `boolean`
+Default: `false`
+
+The name of the project.
+
+### `compareSettings.precision`
+
+Type: `number`
+Default: 0
+Support: ✔ Global | ✔ Run | ✔ Screenshot
+
+Defines the precision of each pixel comparison. The value '0' will result in a failure whenever a difference has been found.
+
+### `propertiesFn`
+
+Type: `Function`
+Default: `(capabilities) => ({ os: capabilities.get('platform'), browser: capabilities.get('browserName'), version: capabilities.get('version') });`
+Support: ✔ Global | ✔ Run | ✔ Screenshot
+
+A function to provide the properties for each screenshot.
+By default uses a function to extract the `os`, `browser`, and `version` from the browser capabilities.
+
+### `suiteName`
+
+Type: `string`
+Default: `undefined`
+Support: ✘ Global | ✔ Run | ✘ Screenshot
+
+The name of the suite.
+
+### `include`
+
+Type: `ElementFinder`
+Default: `undefined`
+Support: ✘ Global | ✘ Run | ✔ Screenshot
+
+The page element to limit the screenshot area. If not defined, the viewport area is used.
+
+### `exclude`
+
+Type: `Array<ElementFinder|{ x:number, y:number, height: number, width: number x\}>`
+Default: `[]`
+Support: ✘ Global | ✘ Run | ✔ Screenshot
+
+Array of areas to exclude when comparing the screenshot with the baseline.
+The areas can be defined bounding boxes or as elements matching a given element finder.
+
 
 ## License
 Copyright © 2015 Xebia
