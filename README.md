@@ -1,3 +1,7 @@
+# This project has been abandoned
+
+As you might have noticed from the commit history, this project hasn't received the love it requires to keep it in working order. As maintainers have moved on to other projects and/or don't have the time to spend on it anymore, we decided to formally abandon this project. We'll keep it archived in Github so anyone willing to fork it is able to do so. Please note the permissions and limitations of the Apache license (see LICENSE file) when you do. Thanks!
+
 # VisualReview API for Protractor
 Provides an API to send screenshots to [VisualReview](https://github.com/xebia/VisualReview) from your [Protractor](https://github.com/angular/protractor) tests. See [the example](example-project/README.md) for a quick demo.
 
