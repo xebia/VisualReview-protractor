@@ -1,4 +1,4 @@
-# VisualReview-protractor example project
+# PPBF-VisualReview-Protractor example project
 
 Example on how to use the test visual regression using the VisualReview protractor API.
 This demo opens a few pages and takes a few screenshots so changes to these pages can be evaluated over time.

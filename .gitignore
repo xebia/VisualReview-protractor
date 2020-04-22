@@ -13,4 +13,4 @@ dependency-reduced-pom.xml
 dist/
 .env
 .DS_Store
-
+.vscode
